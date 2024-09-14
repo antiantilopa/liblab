@@ -35,6 +35,8 @@ class Vector2d:
     
     def norm(self) -> "Vector2d":
         l = self.lenght()
+        if l == 0:
+            return Vector2d(0, 0)
         return Vector2d(self.x / l, self.y / l)
 
     def distanceLooped(self, other: "Vector2d", size: "Vector2d") -> float:
@@ -67,7 +69,14 @@ class Vector2d:
             return 4
 
     def isInBox(self, other1: "Vector2d", other2: "Vector2d") -> bool:
-        return ((self - other1) * (other2 - other1)).getQuarter() == 1 and ((other2 - other1) * (other2 - other1) - (self - other1) * (self - other1)).getQuarter() == 1
+        # return ((self - other1) * (other2 - other1)).getQuarter() == 1 and ((other2 - other1) * (other2 - other1) - (self - other1) * (self - other1)).getQuarter() == 1
+        # that was elegant solution, but not computationaly efficient
+        x1, y1 = other1.x, other1.y
+        x2, y2 = other2.x, other2.y
+        x1, x2 = (min(x1, x2), max(x1, x2))
+        y1, y2 = (min(y1, y2), max(y1, y2))
+        return (x1 <= self.x and self.x <= x2 and y1 <= self.y and self.y <= y2)
+
 
     @staticmethod
     def from_bytes(x: bytes) -> "Vector2d":
