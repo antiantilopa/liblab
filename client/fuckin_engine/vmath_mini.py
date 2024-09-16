@@ -42,14 +42,8 @@ class Vector2d:
     def distanceLooped(self, other: "Vector2d", size: "Vector2d") -> float:
         return sqrt(((self.x - other.x + size.x / 2) % size.x - (size.x / 2)) ** 2 + ((self.y - other.y + size.y / 2) % size.y - (size.y / 2)) ** 2)
 
-    def toAngle(self) -> "Angle":
-        return Angle(atan2(-self.y, self.x))
-
     def as_bytes(self) -> bytes:
         return to_bytes(self.as_tuple())
-    
-    def rounded(self) -> "Vector2d":
-        return Vector2d(round(self.x), round(self.y))
     
     def fast_reach_test(self, other: "Vector2d", mapSize: "Vector2d", dist: float|int) -> bool:
         divercity = ((other - self + (mapSize / 2)) % mapSize.x - (mapSize / 2))
@@ -72,14 +66,14 @@ class Vector2d:
             return 4
 
     def isInBox(self, other1: "Vector2d", other2: "Vector2d") -> bool:
-        # return ((self - other1) * (other2 - other1)).getQuarter() == 1 and ((other2 - other1) * (other2 - other1) - (self - other1) * (self - other1)).getQuarter() == 1
-        # that was elegant solution, but not computationaly efficient
         x1, y1 = other1.x, other1.y
         x2, y2 = other2.x, other2.y
         x1, x2 = (min(x1, x2), max(x1, x2))
         y1, y2 = (min(y1, y2), max(y1, y2))
         return (x1 <= self.x and self.x <= x2 and y1 <= self.y and self.y <= y2)
 
+    def get_squeezed(self, min_values: "Vector2d", max_values: "Vector2d") -> "Vector2d":
+        return Vector2d(min(max(self.x, min_values.x), max_values.x),min(max(self.y, min_values.y), max_values.y))
 
     @staticmethod
     def from_bytes(x: bytes) -> "Vector2d":
@@ -126,114 +120,6 @@ class Vector2d:
         return (self.x != other.x or self.y != other.y)
 
 
-class Angle:
-    """
-    class that represent angles in radians
-    """
-
-    angle: float
-
-    def __init__(self, angle: float = 0) -> None:
-        self.angle = angle
-        self.bound()
-
-    def set(self, angle: float, isDeegre: bool = False):
-        if isDeegre:
-            angle = angle * pi / 180
-        self.angle = angle
-        self.bound()
-
-    def get(self, isDeegre: bool = False):
-        if isDeegre:
-            return self.angle * 180 / pi
-        return self.angle
-
-    def bound(self):
-        self.angle %= (2 * pi)
-
-    def toVector2D(self) -> Vector2d:
-        return Vector2d(cos(self.angle), sin(self.angle))
-
-    def as_bytes(self) -> bytes:
-        return to_bytes(self.angle)
-
-    @staticmethod
-    def from_bytes(x: bytes) -> "Angle":
-        return Angle.from_tuple(tuple(from_bytes(x)))
-
-    def __add__(self, other: "Angle") -> "Angle":
-        return Angle(self.get() + other.get())
-
-    def __sub__(self, other: "Angle") -> "Angle":
-        return Angle(self.get() - other.get())
-
-    def __repr__(self) -> str:
-        return str(self.angle)
-
-    def __float__(self) -> float:
-        return self.angle
-
-class Mod4:
-    def __init__(self, value: int = 0) -> None:
-        self.value = value % 4
-    
-    def as_bytes(self) -> bool:
-        return (to_bytes(bytes((self.value, ))))
-
-    @staticmethod
-    def from_bytes(x: bytes) -> "Mod4":
-        return Mod4(from_bytes(x))
-
-    def __add__(self, other: "Mod4") -> "Mod4":
-        return Mod4((self.value + other.value) % 4)
-    
-    def __sub__(self, other: "Mod4") -> "Mod4":
-        return Mod4((self.value - other.value) % 4)
-
-    def __repr__(self) -> str:
-        return self.value.__repr__()
-
-    def __eq__(self, other: "Mod4") -> bool:
-        return self.other == other.other
-
-    def __ne__(self, other: "Mod4") -> bool:
-        return self.other != other.other
-
-class Direction(Mod4):
-    def __init__(self, value: int = 0) -> None:
-        super().__init__(value)
-    
-    def toAngle(self) -> Angle:
-        return Angle(self.value * pi / 2)
-
-    @staticmethod
-    def fromAngle(ang: Angle) -> "Direction":
-        return Direction((ang.get() + pi/4) // (pi/2))
-    
-    def toVector2d(self) -> Vector2d:
-        return Directions.AsVector2D[self.value]
-
-    @staticmethod
-    def fromVector2d(ang: Vector2d) -> "Direction":
-        newang = ang.complexMultiply(Vector2d(1, 1))
-        return Direction(int(newang.y < 0) * 2 + int(newang.x < 0))
-
-    def rotateVector2d(self, vec: Vector2d) -> Vector2d:
-        return vec.complexMultiply(self.toVector2d())
-    
-class Directions:
-    RIGHT = Direction(0)
-    UP = Direction(1)
-    LEFT = Direction(2)
-    DOWN = Direction(3)
-    
-    AsVector2D = (
-        Vector2d(1, 0), 
-        Vector2d(0, -1), 
-        Vector2d(-1, 0), 
-        Vector2d(0, 1)
-    )
-
 def to_bytes(x) -> bytes:
     '''
     turns integers, floats into 4 length bytearray.\n
@@ -241,13 +127,10 @@ def to_bytes(x) -> bytes:
     lists are encoded badly
     '''
     if type(x) == int:
-        if x < 256:
-            res = bytes((3, x))
-        else:
-            res = bytearray(5)
-            res[0] = 0
-            for i in range(4):
-                res[4-i] = (x // (256 ** i)) % 256
+        res = bytearray(5)
+        res[0] = 0
+        for i in range(4):
+            res[4-i] = (x // (256 ** i)) % 256
     elif type(x) == float:
         res = bytearray(5)
         res[0] = 1

@@ -7,28 +7,33 @@ import pygame
 
 g = Game()
 
-def calc(arg):
-    x = arg
-    for obj in g.objects[x * 30 : (x + 1) * 30]:
-        if obj.alive:
-            obj.collide(g.objects)
-    return g.objects[x * 30 : (x + 1) * 30]
+owner_colors = [
+    (0, 255, 0), 
+    (255, 0, 0),
+    (0, 0, 255)
+]
 
 def main():
 
 
     g.add_player()
+    g.add_player()
     CellTypes.init()
-    g.players[0].cells.append(Collector(CellType.CELLTYPES[0], Vector2d(100, 100), 0))
-    g.players[0].cells.append(Mother(CellType.CELLTYPES[2], Vector2d(100, 300), 0))
+    g.players[0].cells.append(Cell.correct_init(CellType.CELLTYPES[0], Vector2d(200, 200), 0))
+    g.players[0].cells.append(Cell.correct_init(CellType.CELLTYPES[4], Vector2d(200, 300), 0))
+    g.players[0].cells.append(Cell.correct_init(CellType.CELLTYPES[8], Vector2d(300, 300), 0))
+    g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[0], Vector2d(800, 800), 1))
+    g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[4], Vector2d(700, 700), 1))
+    g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[8], Vector2d(800, 700), 1))
     # g.players[0].cells[0].init()
 
-    for i in range(30):
-        for j in range(30):
-            g.objects.append(Resource(ResourceTypes.A, Vector2d(500 + i*21, 100 + j*21), 10, Vector2d(0, 0)))
+    for i in range(40):
+        for j in range(40):
+            g.objects.append(Resource(ResourceTypes.A, Vector2d(500 + i*21, 100 + j*21), 5 + (i+j) % 6, Vector2d(2, 0)))
 
     pygame.init()
     pygame.display.set_caption("liblab test")
+    print(pygame.display.get_desktop_sizes())
     screen=pygame.display.set_mode((1800,1000))
     clock = pygame.time.Clock()
     selected: int = None
@@ -78,7 +83,9 @@ def main():
                     new = cell.produce()
                     if new != None:
                         g.players[0].add_cell(new)
-                pygame.draw.circle(screen, (50 + (cell.mass-5)*4, 200 - (cell.mass-5)*4, 50), cell.pos.as_tuple(), cell.radius)
+                pygame.draw.circle(screen, owner_colors[cell.owner], cell.pos.as_tuple(), cell.radius + 5)
+                pygame.draw.circle(screen, (0, 0, 0), cell.pos.as_tuple(), cell.radius + 2)
+                pygame.draw.circle(screen, (min(50 + (cell.mass-5)*4, 255), max(200 - (cell.mass-5)*4, 0), 50), cell.pos.as_tuple(), cell.radius)
                 pygame.draw.line(screen, (200, 200, 200), cell.pos.as_tuple(), (cell.pos + cell.velocity * 10).as_tuple(), 5)
         pygame.display.flip()
 

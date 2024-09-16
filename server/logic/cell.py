@@ -1,7 +1,6 @@
-from .vmath import Vector2d
+from .vmath import Vector2d, to_bytes, merge
 from .substrate import ResourceTypes, Resource, ResourceType
 from .objects import Sphere
-from typing import Literal
 
 class CellType:
     id:int
@@ -31,6 +30,7 @@ class CellType:
         self.radius = radius
         self.speed = speed
         self.init(*args)
+        self.add_to_celltypes()
     
     def init(self):
         self.ctype = Cell
@@ -40,6 +40,9 @@ class CellType:
 
     def add_to_celltypes(self):
         CellType.CELLTYPES.append(self)
+    
+    def as_bytes(self) -> bytes:
+        return to_bytes(self.id)
 
 class MotherType(CellType):
     can_produce: set[int]
@@ -75,13 +78,19 @@ class DigesterType(CellType):
 
 class CellTypes:
     def init() -> None:
-        Acollector = CollectorType("Acollector", {0, 1, 2, 3}, dict(), 10, 120, 3, 5, 20, 2, {0}, 5)
-        Bcollector = CollectorType("Bcollector", {1, 2, 3}, {0: 2}, 15, 150, 5, 7, 20, 1, {1}, 1)
-        Amother = MotherType("Amother", {2, 3}, {0: 20}, 20, 500, 1, 50, 50, 0.2, set())
-        Amother.add(Acollector)
-        Acollector.add_to_celltypes()
-        Bcollector.add_to_celltypes()
-        Amother.add_to_celltypes()
+        MotherType("Amother", {1, 2, 3}, {0: 20}, 20, 500, 1, 50, 50, 0.2, {4, 8, 0, 1})
+        MotherType("Bmother", {2, 3}, {0: 20}, 30, 600, 1, 75, 75, 0.2, {5, 9, 0, 1, 2})
+        MotherType("Cmother", {3}, {1: 20}, 40, 700, 1, 100, 100, 0.2, {6, 10, 0, 1, 2, 3})
+        MotherType("Dmother", {3}, {2: 20}, 50, 800, 1, 125, 125, 0.2, {7, 11, 0, 1, 2, 3})
+        CollectorType("Acollector", {0, 1, 2, 3}, {}, 10, 120, 3, 5, 20, 2, {0}, 5)
+        CollectorType("Bcollector", {1, 2, 3}, {0: 2}, 15, 150, 5, 7, 20, 1, {1}, 3)
+        CollectorType("Ccollector", {2, 3}, {1: 2}, 20, 180, 7, 9, 20, 0.5, {2}, 1)
+        CollectorType("Dcollector", {3}, {2: 2}, 25, 210, 9, 11, 20, 0.25, {3}, 1)
+        DigesterType("Adigester", {1, 2, 3}, {0: 5}, 15, 150, 1, 5, 25, 3, {0})
+        DigesterType("Bdigester", {2, 3}, {1: 5}, 25, 200, 2, 2, 25, 3, {1})
+        DigesterType("Cdigester", {3}, {2: 5}, 35, 250, 3, 3, 25, 2, {2})
+        DigesterType("Ddigester", {3}, {3: 5}, 45, 300, 4, 4, 25, 2, {3})
+        
 
     
 class Cell(Sphere):
@@ -103,6 +112,10 @@ class Cell(Sphere):
         self.target = pos
         self.alive = True
         self.init()
+
+    @staticmethod
+    def correct_init(celltype: CellType, pos: Vector2d, owner: int) -> "Cell":
+        return celltype.ctype(celltype, pos, owner)
 
     def init(self):
         pass
@@ -129,7 +142,7 @@ class Cell(Sphere):
 
     def burn_fat(self):
         self.energy -= 1
-        if self.energy == 0:
+        if self.energy <= 0:
             self.digest()
     
     def digest(self):
@@ -138,6 +151,9 @@ class Cell(Sphere):
     def iteration(self):
         Sphere.iteration(self)    
         self.go_to()
+    
+    def as_bytes(self) -> bytes:
+        return merge(to_bytes([self.celltype, self.owner, self.energy]), Sphere.as_bytes(self))
 
 class Mother(Cell):
     resources: dict[int, int]
@@ -181,23 +197,32 @@ class Mother(Cell):
 
     def produce(self):
         if self.next_to_produce != -1:
-            self.timer += 1
-            if self.timer >= CellType.CELLTYPES[self.next_to_produce].production_time:
-                new_cell: Cell = CellType.CELLTYPES[self.next_to_produce].ctype(CellType.CELLTYPES[self.next_to_produce], self.pos, self.owner)
+            self.timer -= 1
+            if self.timer <= 0:
+                new_cell: Cell = Cell.correct_init(CellType.CELLTYPES[self.next_to_produce], self.pos, self.owner)
                 new_cell.new_target(self.pos + Vector2d(self.radius + new_cell.radius, 0))
-                self.timer = 0
+                self.next_to_produce = -1
                 return new_cell
-    
+
     def start_production(self, ctype: int):
         if ctype in self.can_produce:
+            if self.energy < CellType.CELLTYPES[ctype].energy_cost:
+                return
             for rtype in CellType.CELLTYPES[ctype].cost:
                 if CellType.CELLTYPES[ctype].cost[rtype] > self.resources[rtype]:
                     return
+            self.energy -= CellType.CELLTYPES[ctype].energy_cost
             for rtype in CellType.CELLTYPES[ctype].cost:
                 self.resources[rtype] -= CellType.CELLTYPES[ctype].cost[rtype]
             self.next_to_produce = ctype
-            self.timer = 0
+            self.timer = CellType.CELLTYPES[self.next_to_produce].production_time
 
+    def iteration(self):
+        Cell.iteration(self)
+        return self.produce()
+
+    def as_bytes(self) -> bytes:
+        return merge(Cell.as_bytes(self), to_bytes([list(self.resources.values()), self.next_to_produce + 1, self.timer]))
 
 class Collector(Cell):
     celltype: CollectorType
@@ -218,11 +243,15 @@ class Collector(Cell):
                         self.collection[obj.resourcetype.id] += 1
                         self.mass += 1
                         obj.mass -= 1
+                        obj.radius = obj.resourcetype.radius_mass_ratio * obj.mass
                         if obj.mass == 0:
                             obj.digest()
                 elif obj.resourcetype.id in self.can_melt_in:
                     self.digest()
         self.clear_colisions()
+    
+    def as_bytes(self) -> bytes:
+        return merge(Cell.as_bytes(self), to_bytes([list(self.collection.values())]))
 
 class Digester(Cell):
     celltype: DigesterType
@@ -241,15 +270,15 @@ class Digester(Cell):
                         obj.digest()
                         self.burn_fat()
                         continue
-            elif type(obj) == Cell:
+            elif issubclass(type(obj), Cell):
                 if obj.owner == self.owner:
                     continue
                 for rtype in obj.can_melt_in:
                     if rtype in self.uses:
                         obj.digest()
                         break
-                obj.burn_fat()
-            if type(obj) == Resource:
+            elif type(obj) == Resource:
                 if obj.resourcetype.id in self.can_melt_in:
                     self.digest()
         self.clear_colisions()
+

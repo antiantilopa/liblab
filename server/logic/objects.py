@@ -1,12 +1,12 @@
-from .vmath import Vector2d
+from .vmath import Vector2d, to_bytes
 
 def abs(x):
     if x < 0:
         return -x
     return x
 
-FRICTIOON_KOEFICIENT = 0.999
-WORLD_SIZE = Vector2d(1800, 1000)
+FRICTIOON_KOEFICIENT = 0.95
+WORLD_SIZE = Vector2d(5000, 5000)
 
 class Sphere:
     id: int
@@ -60,14 +60,18 @@ class Sphere:
     def collide_with(self, sphere: "Sphere"):
         center_line = self.pos - sphere.pos
         radius_sum = self.radius + sphere.radius
+        if center_line.lenght() == 0:
+            return
         if center_line.lenght() > radius_sum:
             return
         nvelocity = self.velocity
         central_line_norm = center_line.norm()
         if self.mass > 0:
             nvelocity = (central_line_norm * (-nvelocity.dotMultiply(central_line_norm)) + nvelocity) + (central_line_norm * (abs(sphere.velocity.dotMultiply(central_line_norm)) * sphere.mass / self.mass))
+            nvelocity = nvelocity + central_line_norm / self.mass
         if sphere.mass > 0:
             sphere.velocity = (central_line_norm * (-sphere.velocity.dotMultiply(central_line_norm)) + sphere.velocity) + (central_line_norm * (-abs(self.velocity.dotMultiply(central_line_norm))) * self.mass / sphere.mass)
+            sphere.velocity = sphere.velocity - central_line_norm / sphere.mass
         self.velocity = nvelocity
         self.collisions.add(sphere)
         sphere.collisions.add(self)
@@ -87,15 +91,17 @@ class Sphere:
         pairs: list[tuple[int]] = []
         for i in range(len(spheres)):
             sp = spheres_rel[x_lefts_coords_rel.index(x_coords[i])]
+            will_be_removed = []
             for j in active:
                 if spheres[sp].pos.x - spheres[j].pos.x >= spheres[sp].radius + spheres[j].radius:
-                    active.remove(j)
+                    will_be_removed.append(j)
                 else:
                     pairs.append((min(j, sp), max(j, sp)))
+            for j in will_be_removed:
+                active.remove(j)
             active.append(sp)
             x_lefts_coords_rel.remove(x_coords[i])
             spheres_rel.remove(sp)
-        
         for pair in pairs:
             if -(spheres[pair[0]].radius + spheres[pair[1]].radius) < spheres[pair[0]].pos.y - spheres[pair[1]].pos.y < spheres[pair[0]].radius + spheres[pair[1]].radius:
                 spheres[pair[0]].collide_with(spheres[pair[1]])
@@ -145,3 +151,6 @@ class Sphere:
         self.flow()
         self.borders(Vector2d(0, 0), WORLD_SIZE)
         self.collision_proceeding()
+    
+    def as_bytes(self) -> bytes:
+        return to_bytes([self.pos.rounded(), self.radius, self.id])

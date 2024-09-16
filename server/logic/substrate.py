@@ -1,4 +1,4 @@
-from .vmath import Vector2d
+from .vmath import Vector2d, to_bytes, merge
 from .objects import Sphere
 
 class ResourceType:
@@ -12,12 +12,15 @@ class ResourceType:
         ResourceType.counter += 1
         self.energy_mass_ratio = energy_mass_ratio
         self.radius_mass_ratio = radius_mass_ratio
+    
+    def as_bytes(self) -> bytes:
+        return to_bytes(self.id)
 
 class ResourceTypes:
-    A = ResourceType(0.01, 1)
-    B = ResourceType(0.02, 0.5)
-    C = ResourceType(0.03, 0.3)
-    D = ResourceType(0.01, 0.4)
+    A = ResourceType(3, 1)
+    B = ResourceType(4, 1)
+    C = ResourceType(5, 1)
+    D = ResourceType(3, 1)
     all = (A, B, C, D)
 
 class Resource(Sphere):
@@ -29,5 +32,8 @@ class Resource(Sphere):
         self.alive = True
         Sphere.__init__(self, pos, resourceType.radius_mass_ratio * mass, velocity, mass)
     
-    def digest(self) -> tuple[int, int]:
+    def digest(self):
         self.alive = False
+
+    def as_bytes(self) -> bytes:
+        return merge(self.resourcetype.as_bytes(), Sphere.as_bytes(self))

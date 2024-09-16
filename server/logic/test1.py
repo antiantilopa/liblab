@@ -1,6 +1,3 @@
-a = [
-    [1, 2],
-    [3], 
-    [4, 5]
-]
+from vmath import to_bytes
 
+print(to_bytes(-5))
