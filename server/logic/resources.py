@@ -18,9 +18,9 @@ class ResourceType:
 
 class ResourceTypes:
     A = ResourceType(3, 1)
-    B = ResourceType(4, 1)
-    C = ResourceType(5, 1)
-    D = ResourceType(3, 1)
+    B = ResourceType(5, 1)
+    C = ResourceType(10, 1)
+    D = ResourceType(7, 1)
     all = (A, B, C, D)
 
 class Resource(Sphere):

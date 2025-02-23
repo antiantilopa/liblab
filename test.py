@@ -1,7 +1,7 @@
 from server.logic.game import Game, Player
-from server.logic.cell import Cell, Collector, CellTypes, CellType, Mother
+from server.logic.cell_types.cell import Cell, Collector, CellTypes, CellType, Mother
 from server.logic.vmath import Vector2d
-from server.logic.substrate import Resource, ResourceTypes
+from server.logic.resources import Resource, ResourceTypes
 from server.logic.objects import Sphere
 import pygame
 
@@ -22,14 +22,14 @@ def main():
     g.players[0].cells.append(Cell.correct_init(CellType.CELLTYPES[0], Vector2d(200, 200), 0))
     g.players[0].cells.append(Cell.correct_init(CellType.CELLTYPES[4], Vector2d(200, 300), 0))
     g.players[0].cells.append(Cell.correct_init(CellType.CELLTYPES[8], Vector2d(300, 300), 0))
-    g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[0], Vector2d(800, 800), 1))
-    g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[4], Vector2d(700, 700), 1))
-    g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[8], Vector2d(800, 700), 1))
-    # g.players[0].cells[0].init()
+    # g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[0], Vector2d(800, 800), 1))
+    # g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[4], Vector2d(700, 700), 1))
+    # g.players[1].cells.append(Cell.correct_init(CellType.CELLTYPES[8], Vector2d(800, 700), 1))
+    g.players[0].cells[0].init()
 
     for i in range(40):
         for j in range(40):
-            g.objects.append(Resource(ResourceTypes.A, Vector2d(500 + i*21, 100 + j*21), 5 + (i+j) % 6, Vector2d(2, 0)))
+            g.objects.append(Resource(ResourceTypes.A, Vector2d(500 + i*21, 100 + j*21), 5, Vector2d(0, i)))
 
     pygame.init()
     pygame.display.set_caption("liblab test")
@@ -40,7 +40,7 @@ def main():
     sel = False
 
     while True:
-        clock.tick(60)
+        clock.tick(120)
         for event in pygame.event.get():
             if event.type==pygame.QUIT:
                 exit()
@@ -89,7 +89,7 @@ def main():
                 pygame.draw.line(screen, (200, 200, 200), cell.pos.as_tuple(), (cell.pos + cell.velocity * 10).as_tuple(), 5)
         pygame.display.flip()
 
-        print(clock.get_fps())
+        print(clock.get_fps(), end="\r")
 
 
 if __name__ == "__main__":

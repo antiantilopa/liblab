@@ -151,7 +151,7 @@ class Angle:
     def bound(self):
         self.angle %= (2 * pi)
 
-    def toVector2D(self) -> Vector2d:
+    def toVector2d(self) -> Vector2d:
         return Vector2d(cos(self.angle), sin(self.angle))
 
     def as_bytes(self) -> bytes:
@@ -178,7 +178,7 @@ class Mod4:
         self.value = value % 4
     
     def as_bytes(self) -> bool:
-        return to_bytes(self.value)
+        return (to_bytes(bytes((self.value, ))))
 
     @staticmethod
     def from_bytes(x: bytes) -> "Mod4":
@@ -211,7 +211,7 @@ class Direction(Mod4):
         return Direction((ang.get() + pi/4) // (pi/2))
     
     def toVector2d(self) -> Vector2d:
-        return Directions.AsVector2D[self.value]
+        return Directions.AsVector2d[self.value]
 
     @staticmethod
     def fromVector2d(ang: Vector2d) -> "Direction":
@@ -227,7 +227,7 @@ class Directions:
     LEFT = Direction(2)
     DOWN = Direction(3)
     
-    AsVector2D = (
+    AsVector2d = (
         Vector2d(1, 0), 
         Vector2d(0, -1), 
         Vector2d(-1, 0), 
@@ -235,11 +235,6 @@ class Directions:
     )
 
 def to_bytes(x) -> bytes:
-    '''
-    turns integers, floats into 4 length bytearray.\n
-    float is rounded.\n
-    lists are encoded badly
-    '''
     if type(x) == int:
         if x < 256:
             res = bytes((3, x))
@@ -293,7 +288,7 @@ def from_bytes(x : bytes, is_initial: bool = True):
     elif x[0] == 2:
         res = bool(x[1])
     elif x[0] == 3:
-        res = int(x[1])
+        res = x[1]
     elif x[0] == 4:
         res = []
         curr = 1

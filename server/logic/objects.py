@@ -6,7 +6,7 @@ def abs(x):
     return x
 
 FRICTIOON_KOEFICIENT = 0.95
-WORLD_SIZE = Vector2d(5000, 5000)
+WORLD_SIZE = Vector2d(3000, 3000)
 
 class Sphere:
     id: int
@@ -109,7 +109,6 @@ class Sphere:
     def collision_proceeding(self):
         self.clear_colisions()
 
-    
     def touches(self, pos: Vector2d) -> bool:
         center_line = self.pos - pos
         radius_sum = self.radius

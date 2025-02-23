@@ -1,6 +1,7 @@
-from .cell import Cell, CellTypes
-from .objects import Sphere
-from .substrate import Resource, ResourceTypes
+from .cell_types.cell import Cell
+from .cell_types.cell_types import CellTypes
+from .objects import Sphere, WORLD_SIZE
+from .resources import Resource, ResourceTypes
 from .vmath import Vector2d, to_bytes
 
 class Player:
@@ -55,17 +56,16 @@ class Game:
                     self.players[obj.owner].add_cell(result)
             else:
                 if obj in self.objects:
-                    print("wha?!")
                     obj.mass = 20
                     obj.radius = obj.resourcetype.radius_mass_ratio * obj.mass
-                    obj.pos = Vector2d(500, 500)
+                    obj.pos = WORLD_SIZE / 2 - obj.pos
                     obj.alive = True
                 else:
                     self.players[obj.owner].cells.remove(obj)
                     obj.set_rigit(False)
                     del obj
     
-    def getPlayerData(self) -> bytes:
+    def getGameData(self) -> bytes:
         cells = []
         for player in self.players:
             cells.extend(player.cells)
