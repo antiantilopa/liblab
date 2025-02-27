@@ -1,5 +1,5 @@
 from .vmath import Vector2d, to_bytes
-
+from typing import Callable
 def abs(x):
     if x < 0:
         return -x
@@ -105,6 +105,22 @@ class Sphere:
         for pair in pairs:
             if -(spheres[pair[0]].radius + spheres[pair[1]].radius) < spheres[pair[0]].pos.y - spheres[pair[1]].pos.y < spheres[pair[0]].radius + spheres[pair[1]].radius:
                 spheres[pair[0]].collide_with(spheres[pair[1]])
+
+    def get_nearest(self, spheres: list["Sphere"], filter: Callable[["Sphere"], bool] = lambda _: True):
+        if len(spheres) == 0:
+            return None
+        if self != spheres[0]:
+            min_d = (spheres[0].pos.x - self.pos.x) ** 2 + (spheres[0].pos.y - self.pos.y) ** 2
+        else:
+            min_d = (spheres[1].pos.x - self.pos.x) ** 2 + (spheres[1].pos.y - self.pos.y) ** 2
+        p = 0
+        for pret in spheres:
+            if pret == self: continue
+            if not filter(pret): continue
+            if (pret.pos.x - self.pos.x) ** 2 + (pret.pos.y - self.pos.y) ** 2 < min_d:
+                p = spheres.index(pret)
+                min_d = (pret.pos.x - self.pos.x) ** 2 + (pret.pos.y - self.pos.y) ** 2
+        return spheres[p]
 
     def collision_proceeding(self):
         self.clear_colisions()

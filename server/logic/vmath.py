@@ -51,11 +51,19 @@ class Vector2d:
     def rounded(self) -> "Vector2d":
         return Vector2d(round(self.x), round(self.y))
     
-    def fast_reach_test(self, other: "Vector2d", mapSize: "Vector2d", dist: float|int) -> bool:
+    def fast_reach_test_looped(self, other: "Vector2d", mapSize: "Vector2d", dist: float|int) -> bool:
         divercity = ((other - self + (mapSize / 2)) % mapSize.x - (mapSize / 2))
         if not (-dist <= divercity.x <= dist and -dist <= divercity.y <= dist):
             return False
         if self.distanceLooped(other, mapSize) > dist:
+            return False
+        return True
+    
+    def fast_reach_test(self, other: "Vector2d", dist: float|int) -> bool:
+        divercity = other - self
+        if not (-dist <= divercity.x <= dist and -dist <= divercity.y <= dist):
+            return False
+        if self.distance(other) > dist:
             return False
         return True
 

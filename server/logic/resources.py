@@ -24,6 +24,7 @@ class ResourceTypes:
     all = (A, B, C, D)
 
 class Resource(Sphere):
+    objs: list["Resource"] = []
     resourcetype: ResourceType
     alive: bool
 
@@ -31,9 +32,11 @@ class Resource(Sphere):
         self.resourcetype = resourceType
         self.alive = True
         Sphere.__init__(self, pos, resourceType.radius_mass_ratio * mass, velocity, mass)
+        Resource.objs.append(self)
     
     def digest(self):
         self.alive = False
+        Resource.objs.remove(self)
 
     def as_bytes(self) -> bytes:
         return merge(self.resourcetype.as_bytes(), Sphere.as_bytes(self))
