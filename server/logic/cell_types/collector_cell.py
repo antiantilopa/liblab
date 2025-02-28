@@ -36,6 +36,7 @@ class Collector(Cell):
                     obj.collection[rtype] += self.collection[rtype]
                     self.mass -= self.collection[rtype]
                     self.collection[rtype] = 0
+                self.target_resource = None
         self.clear_colisions()
     
     def auto(self):
